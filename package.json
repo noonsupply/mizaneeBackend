@@ -2,11 +2,11 @@
   "name": "mizanee-backend",
   "version": "1.0.0",
   "description": "API Mizanee (Foyer Finance) — Express + MongoDB",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "dev": "nodemon",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/src/index.js",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],

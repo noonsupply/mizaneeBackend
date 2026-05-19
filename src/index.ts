@@ -1,11 +1,10 @@
-import { createApp } from "./app";
+import app from "./app";
 import { connectDatabase, disconnectDatabase } from "./config/database";
 import { env } from "./config/env";
 
 async function main(): Promise<void> {
   await connectDatabase();
 
-  const app = createApp();
   const server = app.listen(env.PORT, () => {
     console.log(`Mizanee API listening on port ${env.PORT}`);
   });
