@@ -19,6 +19,16 @@ app.use(
 app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(express.json({ limit: "1mb" }));
 
+// Route de santé
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "Mizanee API is running 🚀",
+    version: "1.0.0",
+    env: env.NODE_ENV,
+  });
+});
+
 app.use("/api", apiRouter);
 
 app.use(errorHandler);
