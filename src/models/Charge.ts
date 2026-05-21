@@ -10,6 +10,9 @@ export interface ICharge {
   categorie: ChargeCategorie;
   type: ChargeType;
   actif: boolean;
+  provisionner: boolean;
+  toleranceDepassement: number;
+  preleve: boolean;
   membreId?: mongoose.Types.ObjectId | null;
   foyerId: mongoose.Types.ObjectId;
 }
@@ -30,6 +33,9 @@ const chargeSchema = new Schema<ChargeDocument>(
     categorie: { type: String, enum: CHARGE_CATEGORIES, required: true },
     type: { type: String, enum: CHARGE_TYPES, default: "COMMUNE" },
     actif: { type: Boolean, default: true },
+    provisionner: { type: Boolean, default: false },
+    toleranceDepassement: { type: Number, default: 0, min: 0 },
+    preleve: { type: Boolean, default: false },
     membreId: { type: Schema.Types.ObjectId, ref: "Membre", default: null },
     foyerId: { type: Schema.Types.ObjectId, ref: "Foyer", required: true, index: true },
   },
@@ -73,6 +79,9 @@ export function toChargePublic(
     categorie: doc.categorie,
     type: estCommune ? "COMMUNE" : "PERSONNELLE",
     actif: doc.actif,
+    provisionner: doc.provisionner,
+    toleranceDepassement: doc.toleranceDepassement,
+    preleve: doc.preleve,
     estCommune,
     membreId:
       !estCommune && doc.membreId && typeof doc.membreId === "object" && "_id" in doc.membreId

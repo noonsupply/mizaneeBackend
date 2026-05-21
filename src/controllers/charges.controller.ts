@@ -17,6 +17,40 @@ import { createChargeSchema, updateChargeSchema } from "../validations/charges";
 
 const MEMBRE_POPULATE = "prenom couleur emoji";
 
+function buildChargeUpdatePayload(
+  input: ReturnType<typeof updateChargeSchema.parse>,
+  existing: Awaited<ReturnType<typeof assertChargeInFoyer>>,
+  amounts: ReturnType<typeof resolveChargeAmounts>,
+) {
+  const nextMembreId =
+    input.membreId !== undefined
+      ? input.membreId
+        ? parseObjectId(input.membreId)
+        : null
+      : existing.membreId;
+  const estCommune = nextMembreId == null;
+  const montantParMoisChanged =
+    input.montantParMois !== undefined || input.montant !== undefined;
+
+  return {
+    ...(input.label !== undefined && { label: input.label }),
+    ...(montantParMoisChanged && {
+      montant: amounts.montant,
+      montantParMois: amounts.montantParMois,
+      montantMensuelMoyen: amounts.montantMensuelMoyen,
+    }),
+    ...(input.categorie !== undefined && { categorie: input.categorie }),
+    type: input.type ?? (estCommune ? "COMMUNE" : "PERSONNELLE"),
+    ...(input.membreId !== undefined && { membreId: nextMembreId }),
+    ...(input.actif !== undefined && { actif: input.actif }),
+    ...(input.provisionner !== undefined && { provisionner: input.provisionner }),
+    ...(input.toleranceDepassement !== undefined && {
+      toleranceDepassement: input.toleranceDepassement,
+    }),
+    ...(input.preleve !== undefined && { preleve: input.preleve }),
+  };
+}
+
 export async function getAll(req: Request, res: Response): Promise<void> {
   const foyerId = requireFoyerId(req);
   const all = await Charge.find({ foyerId: foyerObjectId(req) })
@@ -55,10 +89,13 @@ export async function create(req: Request, res: Response): Promise<void> {
     montantParMois: amounts.montantParMois,
     montantMensuelMoyen: amounts.montantMensuelMoyen,
     categorie: input.categorie,
-    type: estCommune ? "COMMUNE" : "PERSONNELLE",
+    type: input.type ?? (estCommune ? "COMMUNE" : "PERSONNELLE"),
     membreId: input.membreId ? parseObjectId(input.membreId) : null,
     foyerId: foyerObjectId(req),
     actif: input.actif ?? true,
+    provisionner: input.provisionner ?? false,
+    toleranceDepassement: input.toleranceDepassement ?? 0,
+    preleve: input.preleve ?? false,
   });
 
   const populated = estCommune
@@ -87,33 +124,17 @@ export async function update(req: Request, res: Response): Promise<void> {
     montantParMois: input.montantParMois ?? currentParMois,
   });
 
-  const nextMembreId =
-    input.membreId !== undefined
-      ? input.membreId
-        ? parseObjectId(input.membreId)
-        : null
-      : existing.membreId;
-  const estCommune = nextMembreId == null;
-
   const charge = await Charge.findByIdAndUpdate(
     id,
-    {
-      ...(input.label !== undefined && { label: input.label }),
-      montant: amounts.montant,
-      montantParMois: amounts.montantParMois,
-      montantMensuelMoyen: amounts.montantMensuelMoyen,
-      ...(input.categorie !== undefined && { categorie: input.categorie }),
-      type: estCommune ? "COMMUNE" : "PERSONNELLE",
-      ...(input.membreId !== undefined && { membreId: nextMembreId }),
-      ...(input.actif !== undefined && { actif: input.actif }),
-    },
-    { new: true },
+    buildChargeUpdatePayload(input, existing, amounts),
+    { new: true, runValidators: true },
   );
 
   if (!charge) {
     throw new AppError(404, "Charge introuvable", "NOT_FOUND");
   }
 
+  const estCommune = charge.membreId == null;
   const populated = estCommune
     ? charge
     : await Charge.findById(charge._id).populate("membreId", MEMBRE_POPULATE);

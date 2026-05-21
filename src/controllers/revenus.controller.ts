@@ -11,6 +11,7 @@ import {
   requireFoyerId,
 } from "../lib/foyerAccess";
 import { recalculateProrataForFoyer } from "../lib/prorata";
+import { resolveRevenuMontant } from "../lib/revenuAmounts";
 import { sendSuccess } from "../lib/response";
 import { AppError } from "../middleware/errorHandler";
 import { Membre } from "../models/Membre";
@@ -67,6 +68,9 @@ export async function create(req: Request, res: Response): Promise<void> {
           membreId: input.membreId ? parseObjectId(input.membreId) : null,
           foyerId: foyerObjectId(req),
           actif: input.actif ?? true,
+          montantParMois: input.montantParMois ?? {},
+          verseLe: input.verseLe ?? null,
+          certitude: input.certitude ?? null,
         },
       ],
       { session },
@@ -111,14 +115,27 @@ export async function update(req: Request, res: Response): Promise<void> {
           : null
         : existing.membreId;
 
+    const montant =
+      input.montant !== undefined
+        ? resolveRevenuMontant({ montant: input.montant, montantParMois: input.montantParMois })
+        : input.montantParMois !== undefined
+          ? resolveRevenuMontant({
+              montant: existing.montant,
+              montantParMois: input.montantParMois,
+            })
+          : undefined;
+
     const revenu = await Revenu.findByIdAndUpdate(
       id,
       {
         ...(input.label !== undefined && { label: input.label }),
-        ...(input.montant !== undefined && { montant: input.montant }),
+        ...(montant !== undefined && { montant }),
         ...(input.type !== undefined && { type: input.type }),
         ...(input.membreId !== undefined && { membreId: nextMembreId }),
         ...(input.actif !== undefined && { actif: input.actif }),
+        ...(input.montantParMois !== undefined && { montantParMois: input.montantParMois }),
+        ...(input.verseLe !== undefined && { verseLe: input.verseLe }),
+        ...(input.certitude !== undefined && { certitude: input.certitude }),
         foyerId: foyerObjectId(req),
       },
       { new: true, session },
@@ -130,9 +147,10 @@ export async function update(req: Request, res: Response): Promise<void> {
 
     const affectsProrata =
       revenu.membreId != null &&
-      (input.montant !== undefined ||
+      (montant !== undefined ||
         input.actif !== undefined ||
-        input.membreId !== undefined);
+        input.membreId !== undefined ||
+        input.montantParMois !== undefined);
     if (affectsProrata) {
       await recalculateProrataForFoyer(foyerId, session);
     }

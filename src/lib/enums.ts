@@ -19,6 +19,9 @@ export type ChargeCategorie = (typeof CHARGE_CATEGORIES)[number];
 export const PROJET_STATUTS = ["EN_COURS", "ATTEINT", "REPORTE", "ABANDONNE"] as const;
 export type ProjetStatut = (typeof PROJET_STATUTS)[number];
 
+export const CERTITUDE_TYPES = ["certain", "probable", "incertain"] as const;
+export type CertitudeType = (typeof CERTITUDE_TYPES)[number];
+
 export const SCENARIO_MODIFICATION_TYPES = [
   "SALAIRE",
   "CHARGE_NOUVELLE",

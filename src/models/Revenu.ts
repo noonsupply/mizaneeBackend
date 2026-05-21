@@ -1,12 +1,15 @@
 import mongoose, { type Document, Schema } from "mongoose";
 
-import { REVENU_TYPES, type RevenuType } from "../lib/enums";
+import { CERTITUDE_TYPES, REVENU_TYPES, type CertitudeType, type RevenuType } from "../lib/enums";
 
 export interface IRevenu {
   label: string;
   montant: number;
   type: RevenuType;
   actif: boolean;
+  montantParMois: Record<string, number>;
+  verseLe?: string | null;
+  certitude?: CertitudeType | null;
   membreId?: mongoose.Types.ObjectId | null;
   foyerId: mongoose.Types.ObjectId;
 }
@@ -24,6 +27,9 @@ const revenuSchema = new Schema<RevenuDocument>(
     montant: { type: Number, required: true, min: 0 },
     type: { type: String, enum: REVENU_TYPES, required: true },
     actif: { type: Boolean, default: true },
+    montantParMois: { type: Map, of: Number, default: {} },
+    verseLe: { type: String, default: null },
+    certitude: { type: String, enum: CERTITUDE_TYPES, default: null },
     membreId: { type: Schema.Types.ObjectId, ref: "Membre", default: null },
     foyerId: { type: Schema.Types.ObjectId, ref: "Foyer", required: true, index: true },
   },
@@ -36,6 +42,13 @@ revenuSchema.virtual("estCommune").get(function (this: RevenuDocument) {
 
 export const Revenu =
   mongoose.models.Revenu ?? mongoose.model<RevenuDocument>("Revenu", revenuSchema);
+
+function mapToRecord(montantParMois: Map<string, number> | Record<string, number>): Record<string, number> {
+  if (montantParMois instanceof Map) {
+    return Object.fromEntries(montantParMois.entries());
+  }
+  return montantParMois;
+}
 
 export function toRevenuPublic(
   doc: RevenuDocument & {
@@ -55,8 +68,12 @@ export function toRevenuPublic(
     id: doc._id.toString(),
     label: doc.label,
     montant: doc.montant,
+    montantMensuel: doc.montant,
     type: doc.type,
     actif: doc.actif,
+    montantParMois: mapToRecord(doc.montantParMois),
+    verseLe: doc.verseLe ?? null,
+    certitude: doc.certitude ?? null,
     estCommune,
     membreId:
       !estCommune && doc.membreId && typeof doc.membreId === "object" && "_id" in doc.membreId

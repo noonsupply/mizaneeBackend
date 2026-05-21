@@ -7,6 +7,7 @@ import { membresRouter } from "./membres.routes";
 import { projetsRouter } from "./projets.routes";
 import { revenusRouter } from "./revenus.routes";
 import { simulationsRouter } from "./simulations.routes";
+import { virementsRouter } from "./virements.routes";
 
 export const apiRouter = Router();
 
@@ -21,3 +22,4 @@ apiRouter.use("/revenus", revenusRouter);
 apiRouter.use("/charges", chargesRouter);
 apiRouter.use("/projets", projetsRouter);
 apiRouter.use("/simulations", simulationsRouter);
+apiRouter.use("/virements", virementsRouter);
