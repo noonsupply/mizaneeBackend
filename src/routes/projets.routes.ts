@@ -12,5 +12,6 @@ projetsRouter.use(authenticate, requireFoyer);
 projetsRouter.get("/", asyncHandler(projetsController.getAll));
 projetsRouter.post("/", asyncHandler(projetsController.create));
 projetsRouter.patch("/reorder", asyncHandler(projetsController.reorder));
+projetsRouter.patch("/:id/terminer", asyncHandler(projetsController.terminer));
 projetsRouter.patch("/:id", asyncHandler(projetsController.update));
 projetsRouter.delete("/:id", asyncHandler(projetsController.remove));

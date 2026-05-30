@@ -11,6 +11,8 @@ export interface IProjet {
   statut: ProjetStatut;
   couleur: string;
   emoji?: string | null;
+  /** Mois de la dépense effective (`YYYY-MM`) une fois le projet terminé. */
+  dateDepense?: string | null;
   foyerId: mongoose.Types.ObjectId;
   membres: mongoose.Types.ObjectId[];
 }
@@ -31,6 +33,7 @@ const projetSchema = new Schema<ProjetDocument>(
     statut: { type: String, enum: PROJET_STATUTS, default: "EN_COURS" },
     couleur: { type: String, default: "#378ADD" },
     emoji: { type: String, default: null },
+    dateDepense: { type: String, default: null },
     foyerId: { type: Schema.Types.ObjectId, ref: "Foyer", required: true, index: true },
     membres: [{ type: Schema.Types.ObjectId, ref: "Membre" }],
   },
@@ -62,6 +65,7 @@ export function toProjetPublic(
     statut: doc.statut,
     couleur: doc.couleur,
     emoji: doc.emoji ?? null,
+    dateDepense: doc.dateDepense ?? null,
     foyerId: doc.foyerId.toString(),
     createdAt: doc.createdAt.toISOString(),
     membres,

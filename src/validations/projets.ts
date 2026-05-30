@@ -30,6 +30,13 @@ export const updateProjetSchema = z.object({
   membreIds: z.array(z.string().min(1)).optional(),
 });
 
+export const terminerProjetSchema = z.object({
+  dateDepense: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/, "Format attendu YYYY-MM")
+    .optional(),
+});
+
 export const reorderProjetsSchema = z.object({
   items: z
     .array(

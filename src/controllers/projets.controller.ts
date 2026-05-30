@@ -13,8 +13,14 @@ import {
 } from "../lib/foyerAccess";
 import { sendSuccess } from "../lib/response";
 import { AppError } from "../middleware/errorHandler";
+import { Foyer } from "../models/Foyer";
 import { Projet, toProjetPublic } from "../models/Projet";
-import { createProjetSchema, reorderProjetsSchema, updateProjetSchema } from "../validations/projets";
+import {
+  createProjetSchema,
+  reorderProjetsSchema,
+  terminerProjetSchema,
+  updateProjetSchema,
+} from "../validations/projets";
 
 async function resolveMembreIds(membreIds: string[] | undefined, foyerId: string) {
   if (!membreIds?.length) return [];
@@ -97,6 +103,36 @@ export async function update(req: Request, res: Response): Promise<void> {
   }
 
   sendSuccess(res, { projet: toProjetPublic(projet) });
+}
+
+export async function terminer(req: Request, res: Response): Promise<void> {
+  const foyerId = requireFoyerId(req);
+  const id = paramId(req.params.id);
+  const existing = await assertProjetInFoyer(id, foyerId);
+  const { dateDepense } = terminerProjetSchema.parse(req.body);
+  const moisDepense = dateDepense ?? new Date().toISOString().slice(0, 7);
+
+  const projet = await Projet.findByIdAndUpdate(
+    id,
+    { statut: "ATTEINT", dateDepense: moisDepense },
+    { new: true },
+  ).populate("membres", "prenom");
+
+  if (!projet) {
+    throw new AppError(404, "Projet introuvable", "NOT_FOUND");
+  }
+
+  const foyer = await Foyer.findById(foyerId);
+  if (!foyer) {
+    throw new AppError(404, "Foyer introuvable", "NOT_FOUND");
+  }
+
+  const ancienSolde = foyer.soldeEpargne?.montant ?? 0;
+  const nouveauSolde = Math.max(0, ancienSolde - existing.montant);
+  foyer.soldeEpargne = { montant: nouveauSolde, updatedAt: new Date() };
+  await foyer.save();
+
+  sendSuccess(res, { projet: toProjetPublic(projet), nouveauSoldeEpargne: nouveauSolde });
 }
 
 export async function remove(req: Request, res: Response): Promise<void> {
